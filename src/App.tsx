@@ -1,6 +1,7 @@
 import React from 'react';
-import logo from './logo.svg';
+import logo from './logo.jpg';
 import './App.css';
+import Collator from './collator/Collator';
 
 class App extends React.Component {
   render() {
@@ -9,16 +10,9 @@ class App extends React.Component {
         <header className="App-header">
           <img src={logo} className="App-logo" alt="logo" />
           <p>
-            Edit <code>src/App.tsx</code> and save to reload. Hope for the best.
+            Hump? What hump?
           </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
+          <Collator/>
         </header>
       </div>);
   }
