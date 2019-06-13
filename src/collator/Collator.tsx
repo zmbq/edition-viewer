@@ -1,4 +1,5 @@
 import React from 'react';
+import { collateFromURL } from '../tei-processing/collation-gathering';
 
 class Collator extends React.Component {
     state = {
@@ -24,7 +25,8 @@ class Collator extends React.Component {
     }
 
     async collate() {
-        await this.delay(2500);
+        const gatherer = await collateFromURL('https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/standoff_Spine/spine_C01.xml');
+        await gatherer.dereferencePointers();
         this.setState( { processing: false });
     }
 }
