@@ -1,4 +1,5 @@
 import { stringify } from "querystring";
+import { fetchXML, parseXML, evaluateXPath } from "./helpers";
 
 interface Pointer {
     url: string,
@@ -6,20 +7,20 @@ interface Pointer {
 }
 
 export class CollationGathering {
-    private _tei: string;
+    private _collationDoc: Document;
     private  _xmls : Map<string, Document>;  // Map from URL to a parsed XML
 
-    constructor(tei: string) {
-        this._tei = tei;
+    constructor(tei: Document) {
+        this._collationDoc = tei;
         this._xmls = new Map<string, Document>();
     }
 
-    private async fetchXML(url: string) {
-        const response = await fetch(url);
-        const xml = await response. text();
-        const parser = new DOMParser();
-        const dom = parser.parseFromString(xml, 'text/xml');
-        this._xmls.set(url, dom);
+    private async loadXML(url: string) {
+        // The URLs in the collaction documents are not accurate. We need to patch them, while keeping
+        // the original URLs in the collation document.
+        const patchedURL = this.patchURL(url);
+        const doc = await fetchXML(patchedURL);
+        this._xmls.set(url, doc);
     }
 
     private getXML(url: string): Document {
@@ -28,6 +29,20 @@ export class CollationGathering {
         }
 
         return this._xmls.get(url)!; // The ! means we are cetain 'undefined' will not be returned
+    }
+
+    private patchURL(url: string) {
+        // This function is here to overcome a discrepancy in the URLs.
+        // The Collation XMLs have URLs like https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/edition-chunks/P5-f1818_C07.xml
+        // While the real URL Should be      https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/variorum-chunks/f1818_C07.xml
+        
+        const patched = url.replace('edition-chunks/P5-', 'variorum-chunks/');
+        if (patched === url) {
+            console.error(`Can't patch URL ${url}`);
+            throw new Error(`Can't patch URL ${url}`);
+        }
+
+        return patched;
     }
 
     private parsePointer(ptr: Element): Pointer {
@@ -49,16 +64,13 @@ export class CollationGathering {
     }
 
     public async dereferencePointers() {
-        const parser = new DOMParser();
-        const dom = parser.parseFromString(this._tei, 'text/xml');
-
-        const ptrElements = Array.from(dom.getElementsByTagName('ptr'));
+        const ptrElements = Array.from(this._collationDoc.getElementsByTagName('ptr'));
         const pointers = ptrElements.map((ptr) => this.parsePointer(ptr));
 
         // First, fetch all URLs
         const urlSet = new Set(pointers.map((ptr) => ptr.url));
         const urls = Array.from(urlSet);
-        const promises = urls.map((url) => this.fetchXML(url));
+        const promises = urls.map((url) => this.loadXML(url));
         await Promise.all(promises);
 
         // Now we can dereference all the pointers
@@ -67,18 +79,32 @@ export class CollationGathering {
         }
     }
 
-    private async dereferencePointer(ptr: Pointer) {
+    private dereferencePointer(ptr: Pointer) {
         const dom = this.getXML(ptr.url);
-        const result = dom.evaluate(ptr.xpath, dom);
-        console.log(result);
+
+        // Most paths we have are actually just element IDs. Build an xpath expression for them:
+        const xpath = `//*[@xml:id="${ptr.xpath}"]`;
+        const idResults = evaluateXPath(dom, xpath);
+        console.debug(`ID search ${ptr.xpath}: ${idResults}`);
+
+        if (idResults.length) { 
+            return idResults;
+        }
+
+        const xpathResults = evaluateXPath(dom, ptr.xpath);
+        console.debug(`XPath search ${ptr.xpath}: ${xpathResults}`);
+
+        if(xpathResults.length) {
+            return xpathResults;
+        }
+
+        console.error(`Can't resolve pointer ${ptr.xpath}`);
     }
 }
 
 export async function collateFromURL(url: string): Promise<CollationGathering> {
-    const response = await fetch(url);
-    const xml = await response.text();
-
-    return new CollationGathering(xml);
+    const doc = await fetchXML(url);
+    return new CollationGathering(doc);
 }
 
 export function collateFromElement(id: string): CollationGathering {
@@ -88,6 +114,6 @@ export function collateFromElement(id: string): CollationGathering {
     }
 
     const xml = elem.innerHTML;
-
-    return new CollationGathering(xml);
+    const doc = parseXML(xml);
+    return new CollationGathering(doc);
 }
