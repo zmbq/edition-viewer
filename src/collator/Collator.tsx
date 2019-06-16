@@ -26,13 +26,14 @@ class Collator extends React.Component {
     }
 
     async collate() {
-        const gatherer = await collateFromURL('https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/standoff_Spine/spine_C09.xml');
+        const gatherer = await collateFromURL('https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/standoff_Spine/spine_C02.xml');
         await gatherer.dereferencePointers();
+        console.log(gatherer.collation.documentElement.outerHTML);
 
         // Take gatherer.collation and turn it into a React element tree. Plug it into this.elements
-        const elem = React.createElement('TeiApp', { id: '12'});
-        this.setState( { processing: false, elements: [elem]});
-        // this.setState( { processing: false });
+        //const elem = React.createElement('TeiApp', { id: '12'});
+        //this.setState( { processing: false, elements: [elem]});
+        this.setState( { processing: false });
     }
 
     // 1. Create TeiApp and see it's displayed.
