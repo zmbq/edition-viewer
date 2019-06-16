@@ -1,5 +1,3 @@
-import { string } from "prop-types";
-
 export function parseXML(xml: string) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xml, "text/xml");

@@ -1,4 +1,3 @@
-import { stringify } from "querystring";
 import { fetchXML, parseXML, evaluateXPath } from "./helpers";
 
 interface Pointer {
@@ -15,6 +14,10 @@ export class CollationGathering {
         this._xmls = new Map<string, Document>();
     }
 
+    public get collation() {
+        return _collationDoc;
+    }
+    
     private async loadXML(url: string) {
         // The URLs in the collaction documents are not accurate. We need to patch them, while keeping
         // the original URLs in the collation document.
@@ -32,6 +35,7 @@ export class CollationGathering {
     }
 
     private patchURL(url: string) {
+        return url;
         // This function is here to overcome a discrepancy in the URLs.
         // The Collation XMLs have URLs like https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/edition-chunks/P5-f1818_C07.xml
         // While the real URL Should be      https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/variorum-chunks/f1818_C07.xml
@@ -53,7 +57,7 @@ export class CollationGathering {
         const target = attr.value;
 
         const parts = target.split('#')
-        if (parts.length != 2) {
+        if (parts.length !== 2) {
             throw new Error(`Target ${target} is not well formatted. Expected uri#xpath`);
         }
 

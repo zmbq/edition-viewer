@@ -4,6 +4,7 @@ import { collateFromURL } from '../tei-processing/collation-gathering';
 class Collator extends React.Component {
     state = {
         processing: false,
+        elements: [],
     }
 
     constructor(props: any) {
@@ -14,7 +15,7 @@ class Collator extends React.Component {
 
     render() {
         return (
-            <div>{ this.state.processing ? 'Processing...' : 'Done' }</div>
+            <div>{ this.state.processing ? 'Processing...' : this.state.elements }</div>
         );
     }
 
@@ -25,10 +26,18 @@ class Collator extends React.Component {
     }
 
     async collate() {
-        const gatherer = await collateFromURL('https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/standoff_Spine/spine_C10.xml');
+        const gatherer = await collateFromURL('https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/standoff_Spine/spine_C09.xml');
         await gatherer.dereferencePointers();
-        this.setState( { processing: false });
+
+        // Take gatherer.collation and turn it into a React element tree. Plug it into this.elements
+        const elem = React.createElement('TeiApp', { id: '12'});
+        this.setState( { processing: false, elements: [elem]});
+        // this.setState( { processing: false });
     }
+
+    // 1. Create TeiApp and see it's displayed.
+    // 2. Add two TeiApps to this.state.elements and see they are both displayed
+    // 3. Loop over gatherer.collation, find all <app> elements and turn them into TeiApp elements (const ptrElements = Array.from(this._collationDoc.getElementsByTagName('ptr'));)
 }
 
 export default Collator;
