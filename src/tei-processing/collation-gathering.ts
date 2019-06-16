@@ -68,9 +68,11 @@ export class CollationGathering {
                 ptr.node.remove();
             } else {
                 const car = replacements[0];
-                const cdr = replacements.slice(1);  // Homage to LISP
-
+                
                 ptr.node.replaceWith(car);
+                
+                const cdr = replacements.slice(1);  // Homage to LISP
+                cdr.reverse();
                 for(const node of cdr) {
                     ptr.node.after(node);
                 }
@@ -84,7 +86,6 @@ export class CollationGathering {
         // Most paths we have are actually just element IDs. Build an xpath expression for them:
         const xpath = `//*[@xml:id="${ptr.xpath}"]`;
         const idResults = evaluateXPath(dom, xpath);
-        console.debug(`ID search ${ptr.xpath}: ${idResults}`);
 
         if (idResults.length) { 
             return idResults;
