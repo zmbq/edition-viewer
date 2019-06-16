@@ -1,6 +1,7 @@
 import { fetchXML, parseXML, evaluateXPath } from "./helpers";
 
 interface Pointer {
+    node: ChildNode,
     url: string,
     xpath: string,
 }
@@ -19,10 +20,7 @@ export class CollationGathering {
     }
     
     private async loadXML(url: string) {
-        // The URLs in the collaction documents are not accurate. We need to patch them, while keeping
-        // the original URLs in the collation document.
-        const patchedURL = this.patchURL(url);
-        const doc = await fetchXML(patchedURL);
+        const doc = await fetchXML(url);
         this._xmls.set(url, doc);
     }
 
@@ -32,21 +30,6 @@ export class CollationGathering {
         }
 
         return this._xmls.get(url)!; // The ! means we are cetain 'undefined' will not be returned
-    }
-
-    private patchURL(url: string) {
-        return url;
-        // This function is here to overcome a discrepancy in the URLs.
-        // The Collation XMLs have URLs like https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/edition-chunks/P5-f1818_C07.xml
-        // While the real URL Should be      https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/variorum-chunks/f1818_C07.xml
-        
-        const patched = url.replace('edition-chunks/P5-', 'variorum-chunks/');
-        if (patched === url) {
-            console.error(`Can't patch URL ${url}`);
-            throw new Error(`Can't patch URL ${url}`);
-        }
-
-        return patched;
     }
 
     private parsePointer(ptr: Element): Pointer {
@@ -62,6 +45,7 @@ export class CollationGathering {
         }
 
         return {
+            node: ptr as ChildNode,
             url: parts[0],
             xpath: parts[1]
         };
@@ -79,17 +63,29 @@ export class CollationGathering {
 
         // Now we can dereference all the pointers
         for(const ptr of pointers) {
-            this.dereferencePointer(ptr);
+            const replacements = this.dereferencePointer(ptr);
+            if (replacements.length === 0) {
+                ptr.node.remove();
+            } else {
+                const car = replacements[0];
+                
+                ptr.node.replaceWith(car);
+                
+                const cdr = replacements.slice(1);  // Homage to LISP
+                cdr.reverse();
+                for(const node of cdr) {
+                    ptr.node.after(node);
+                }
+            }
         }
     }
 
-    private dereferencePointer(ptr: Pointer) {
+    private dereferencePointer(ptr: Pointer): Node[] {
         const dom = this.getXML(ptr.url);
 
         // Most paths we have are actually just element IDs. Build an xpath expression for them:
         const xpath = `//*[@xml:id="${ptr.xpath}"]`;
         const idResults = evaluateXPath(dom, xpath);
-        console.debug(`ID search ${ptr.xpath}: ${idResults}`);
 
         if (idResults.length) { 
             return idResults;
@@ -103,6 +99,7 @@ export class CollationGathering {
         }
 
         console.error(`Can't resolve pointer ${ptr.xpath}`);
+        return [];
     }
 }
 
