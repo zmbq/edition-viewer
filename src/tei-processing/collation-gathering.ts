@@ -15,7 +15,7 @@ export class CollationGathering {
     }
 
     public get collation() {
-        return _collationDoc;
+        return this._collationDoc;
     }
     
     private async loadXML(url: string) {
