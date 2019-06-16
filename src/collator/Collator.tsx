@@ -25,7 +25,7 @@ class Collator extends React.Component {
     }
 
     async collate() {
-        const gatherer = await collateFromURL('https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/standoff_Spine/spine_C01.xml');
+        const gatherer = await collateFromURL('https://raw.githubusercontent.com/PghFrankenstein/fv-data/master/standoff_Spine/spine_C10.xml');
         await gatherer.dereferencePointers();
         this.setState( { processing: false });
     }
