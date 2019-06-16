@@ -36,14 +36,17 @@ class Collator extends React.Component {
         await gatherer.dereferencePointers();
         
         const appElements = Array.from(gatherer.collation.getElementsByTagName('app'));
+        console.log("appElements=", appElements);
 
         // Take gatherer.collation and turn it into a React element tree. Plug it into this.elements
-        const elem = React.createElement(TeiApp, {id: '12', key: 1} );
+        // const elem = React.createElement(TeiApp, {id: '12', key: 1} );
         
-        // const elem: any = [];
-        // appElements.forEach((element, index) => {
-        //     elem.push(React.createElement(TeiApp, {id: element, key: index} ));
-        // });
+        const elem: any = [];
+        appElements.forEach((element, index) => {
+            debugger
+            const id: any = element.attributes['xml:id'].nodeValue ? element.attributes["xml:id"].nodeValue : "empty";
+            elem.push(React.createElement(TeiApp, {id: id, key: index} ));
+        });
         
         this.setState( { processing: false, elements: [elem]});
     }
